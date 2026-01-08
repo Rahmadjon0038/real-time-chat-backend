@@ -1,0 +1,148 @@
+const db = require('../config/db');
+
+class Chat {
+    // Create a new chat between users
+    static async create(participantIds, chatName = null) {
+        return new Promise((resolve, reject) => {
+            // Start transaction
+            db.serialize(() => {
+                db.run("BEGIN TRANSACTION");
+
+                // Create chat
+                const chatSql = `INSERT INTO chats (name, type) VALUES (?, ?)`;
+                const type = participantIds.length > 2 ? 'group' : 'private';
+                
+                db.run(chatSql, [chatName, type], function(err) {
+                    if (err) {
+                        db.run("ROLLBACK");
+                        reject(err);
+                        return;
+                    }
+
+                    const chatId = this.lastID;
+
+                    // Add participants
+                    const participantSql = `INSERT INTO chat_participants (chat_id, user_id) VALUES (?, ?)`;
+                    let completed = 0;
+                    let error = null;
+
+                    for (const userId of participantIds) {
+                        db.run(participantSql, [chatId, userId], function(err) {
+                            completed++;
+                            if (err && !error) error = err;
+
+                            if (completed === participantIds.length) {
+                                if (error) {
+                                    db.run("ROLLBACK");
+                                    reject(error);
+                                } else {
+                                    db.run("COMMIT");
+                                    resolve({ 
+                                        id: chatId, 
+                                        name: chatName, 
+                                        type,
+                                        participants: participantIds 
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    }
+
+    // Get user's chats
+    static async getUserChats(userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT 
+                    c.*,
+                    GROUP_CONCAT(u.username) as participant_usernames,
+                    GROUP_CONCAT(u.name) as participant_names,
+                    (SELECT content FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message,
+                    (SELECT sent_at FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message_time
+                FROM chats c
+                JOIN chat_participants cp ON c.id = cp.chat_id
+                LEFT JOIN chat_participants cp2 ON c.id = cp2.chat_id
+                LEFT JOIN users u ON cp2.user_id = u.id
+                WHERE cp.user_id = ?
+                GROUP BY c.id
+                ORDER BY last_message_time DESC
+            `;
+
+            db.all(sql, [userId], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
+            });
+        });
+    }
+
+    // Find existing private chat between two users
+    static async findPrivateChat(userId1, userId2) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT c.* FROM chats c
+                JOIN chat_participants cp1 ON c.id = cp1.chat_id
+                JOIN chat_participants cp2 ON c.id = cp2.chat_id
+                WHERE c.type = 'private' 
+                AND cp1.user_id = ? 
+                AND cp2.user_id = ?
+            `;
+
+            db.get(sql, [userId1, userId2], (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row);
+                }
+            });
+        });
+    }
+
+    // Get chat by ID with participants
+    static async getById(chatId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT 
+                    c.*,
+                    GROUP_CONCAT(u.id) as participant_ids,
+                    GROUP_CONCAT(u.username) as participant_usernames,
+                    GROUP_CONCAT(u.name) as participant_names
+                FROM chats c
+                JOIN chat_participants cp ON c.id = cp.chat_id
+                JOIN users u ON cp.user_id = u.id
+                WHERE c.id = ?
+                GROUP BY c.id
+            `;
+
+            db.get(sql, [chatId], (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row);
+                }
+            });
+        });
+    }
+
+    // Check if user is participant of chat
+    static async isParticipant(chatId, userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `SELECT COUNT(*) as count FROM chat_participants WHERE chat_id = ? AND user_id = ?`;
+            
+            db.get(sql, [chatId, userId], (err, row) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(row.count > 0);
+                }
+            });
+        });
+    }
+}
+
+module.exports = Chat;

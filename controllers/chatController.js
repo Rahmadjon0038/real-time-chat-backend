@@ -1,0 +1,217 @@
+const Chat = require('../models/Chat');
+const Message = require('../models/Message');
+const User = require('../models/User');
+
+// Get user's chats
+const getUserChats = async (req, res) => {
+    try {
+        const chats = await Chat.getUserChats(req.userId);
+
+        res.json({
+            success: true,
+            data: {
+                chats
+            }
+        });
+
+    } catch (error) {
+        console.error('Get user chats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// Create new chat or get existing private chat
+const createOrGetChat = async (req, res) => {
+    try {
+        const { targetUsername } = req.body;
+
+        // Validate input
+        if (!targetUsername) {
+            return res.status(400).json({
+                success: false,
+                message: 'Target username kiritilishi kerak'
+            });
+        }
+
+        // Find target user
+        const targetUser = await User.findByUsername(targetUsername);
+        if (!targetUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'Foydalanuvchi topilmadi'
+            });
+        }
+
+        // Check if trying to chat with self
+        if (targetUser.id === req.userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'O\'zingiz bilan chat qila olmaysiz'
+            });
+        }
+
+        // Check if private chat already exists
+        let existingChat = await Chat.findPrivateChat(req.userId, targetUser.id);
+        
+        if (existingChat) {
+            // Get chat details with participants
+            const chatDetails = await Chat.getById(existingChat.id);
+            return res.json({
+                success: true,
+                message: 'Mavjud chat topildi',
+                data: {
+                    chat: chatDetails
+                }
+            });
+        }
+
+        // Create new private chat
+        const newChat = await Chat.create([req.userId, targetUser.id]);
+        const chatDetails = await Chat.getById(newChat.id);
+
+        res.status(201).json({
+            success: true,
+            message: 'Yangi chat yaratildi',
+            data: {
+                chat: chatDetails
+            }
+        });
+
+    } catch (error) {
+        console.error('Create or get chat error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// Get chat messages
+const getChatMessages = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const { limit = 50, offset = 0 } = req.query;
+
+        // Check if user is participant of this chat
+        const isParticipant = await Chat.isParticipant(chatId, req.userId);
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: 'Bu chatga kirish huquqingiz yo\'q'
+            });
+        }
+
+        const messages = await Message.getChatMessages(chatId, parseInt(limit), parseInt(offset));
+
+        res.json({
+            success: true,
+            data: {
+                messages
+            }
+        });
+
+    } catch (error) {
+        console.error('Get chat messages error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// Send message (this will be mainly used via socket, but keeping REST endpoint)
+const sendMessage = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const { content } = req.body;
+
+        // Validate input
+        if (!content || content.trim() === '') {
+            return res.status(400).json({
+                success: false,
+                message: 'Xabar matni bo\'sh bo\'lishi mumkin emas'
+            });
+        }
+
+        // Check if user is participant of this chat
+        const isParticipant = await Chat.isParticipant(chatId, req.userId);
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: 'Bu chatga xabar yuborish huquqingiz yo\'q'
+            });
+        }
+
+        // Create message
+        const message = await Message.create({
+            chatId: parseInt(chatId),
+            senderId: req.userId,
+            content: content.trim()
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Xabar yuborildi',
+            data: {
+                message
+            }
+        });
+
+    } catch (error) {
+        console.error('Send message error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// Get chat details
+const getChatDetails = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+
+        // Check if user is participant of this chat
+        const isParticipant = await Chat.isParticipant(chatId, req.userId);
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: 'Bu chatga kirish huquqingiz yo\'q'
+            });
+        }
+
+        const chat = await Chat.getById(chatId);
+        
+        if (!chat) {
+            return res.status(404).json({
+                success: false,
+                message: 'Chat topilmadi'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                chat
+            }
+        });
+
+    } catch (error) {
+        console.error('Get chat details error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+module.exports = {
+    getUserChats,
+    createOrGetChat,
+    getChatMessages,
+    sendMessage,
+    getChatDetails
+};
