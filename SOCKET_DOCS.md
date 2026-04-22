@@ -76,6 +76,29 @@ socket.emit('send_message', {
 
 ---
 
+### `delete_message`
+Chatdagi xabarni o'chirish (faqat yuboruvchi o'chira oladi).
+
+**Parameters:**
+```typescript
+{
+  chatId: number;
+  messageId: number;
+}
+```
+
+**Example:**
+```javascript
+socket.emit('delete_message', {
+  chatId: 1,
+  messageId: 10
+});
+```
+
+**Response:** `message_deleted` (success) yoki `error`
+
+---
+
 ### `create_chat`
 Yangi chat yaratish yoki mavjudini topish.
 
@@ -182,7 +205,6 @@ Yangi xabar kelganligi haqida.
       id: number;
       chat_id: number;
       sender_id: number;
-      sender_username: string;
       sender_name: string;
       sender_phone: string;
       content: string;
@@ -203,6 +225,30 @@ socket.on('new_message', (data) => {
 
 ---
 
+### `message_deleted`
+Xabar o'chirilganligi haqida (chat ichida barchaga broadcast).
+
+**Data:**
+```typescript
+{
+  success: boolean;
+  data: {
+    chatId: number;
+    messageId: number;
+  }
+}
+```
+
+**Example:**
+```javascript
+socket.on('message_deleted', (data) => {
+  // UI'da messageId bo'yicha xabarni olib tashlash / "deleted" qilib ko'rsatish
+  removeMessageFromUI(data.data.chatId, data.data.messageId);
+});
+```
+
+---
+
 ### `chat_created`
 Yangi chat yaratilganligi yoki mavjud chat topilganligi haqida.
 
@@ -217,7 +263,6 @@ Yangi chat yaratilganligi yoki mavjud chat topilganligi haqida.
       name: string | null;
       type: 'private' | 'group';
       participant_ids: string;
-      participant_usernames: string;
       participant_phones: string;
       participant_names: string;
       created_at: string;
@@ -250,9 +295,10 @@ Boshqa foydalanuvchi siz bilan chat yaratganligi haqida.
       name: string | null;
       type: 'private' | 'group';
       participant_ids: string;
-      participant_usernames: string;
+      participant_phones: string;
       participant_names: string;
       created_at: string;
+      created_at_uz: string;
     }
   }
 }
@@ -275,7 +321,7 @@ Boshqa foydalanuvchi yozayotganligi haqida.
 ```typescript
 {
   userId: number;
-  username: string;
+  name: string;
   phone: string;
   isTyping: boolean;
 }
@@ -285,9 +331,9 @@ Boshqa foydalanuvchi yozayotganligi haqida.
 ```javascript
 socket.on('user_typing', (data) => {
   if (data.isTyping) {
-    console.log(`${data.username} yozmoqda...`);
+    console.log(`${data.name} yozmoqda...`);
   } else {
-    console.log(`${data.username} yozishni to'xtatdi`);
+    console.log(`${data.name} yozishni to'xtatdi`);
   }
 });
 ```
@@ -355,9 +401,9 @@ socket.on('new_chat', (data) => {
 
 socket.on('user_typing', (data) => {
   if (data.isTyping) {
-    showTypingIndicator(data.username);
+    showTypingIndicator(data.name);
   } else {
-    hideTypingIndicator(data.username);
+    hideTypingIndicator(data.name);
   }
 });
 

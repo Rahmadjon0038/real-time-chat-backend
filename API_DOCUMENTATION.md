@@ -13,7 +13,6 @@ POST /api/auth/register
 **Nima Yuborish Kerak:**
 ```json
 {
-  "username": "john_doe",
   "name": "John Doe",
   "phone": "+998901234567",
   "password": "securePassword123"
@@ -28,7 +27,6 @@ POST /api/auth/register
   "data": {
     "user": {
       "id": 1,
-      "username": "john_doe",
       "name": "John Doe",
       "phone": "+998901234567"
     },
@@ -46,7 +44,7 @@ POST /api/auth/login
 **Nima Yuborish Kerak:**
 ```json
 {
-  "username": "john_doe",
+  "phone": "+998901234567",
   "password": "securePassword123"
 }
 ```
@@ -59,7 +57,6 @@ POST /api/auth/login
   "data": {
     "user": {
       "id": 1,
-      "username": "john_doe",
       "name": "John Doe",
       "phone": "+998901234567"
     },
@@ -86,7 +83,6 @@ Authorization: Bearer <JWT_TOKEN>
   "data": {
     "user": {
       "id": 1,
-      "username": "john_doe",
       "name": "John Doe",
       "phone": "+998901234567",
       "created_at": "2026-04-19 10:30:00"
@@ -114,13 +110,11 @@ Authorization: Bearer <JWT_TOKEN>
     "users": [
       {
         "id": 2,
-        "username": "alice_smith",
         "name": "Alice Smith",
         "phone": "+998902345678"
       },
       {
         "id": 3,
-        "username": "bob_wilson",
         "name": "Bob Wilson",
         "phone": "+998903456789"
       }
@@ -152,16 +146,16 @@ Authorization: Bearer <JWT_TOKEN>
         "id": 1,
         "name": null,
         "type": "private",
-        "participant_usernames": "john_doe,alice_smith",
+        "participant_phones": "+998901234567,+998902345678",
         "participant_names": "John Doe,Alice Smith",
         "last_message": "Salomu aleykum!",
-        "last_message_time": "2026-04-19 15:45:30"
+        "last_message_time": "2026-04-19 15:45:30",
+        "last_message_time_uz": "2026-04-19 20:45:30"
       },
       {
         "id": 2,
         "name": "Jamshid Group",
         "type": "group",
-        "participant_usernames": "john_doe,bob_wilson",
         "participant_phones": "+998901234567,+998903456789",
         "participant_names": "John Doe,Bob Wilson",
         "last_message": "Assalomualaikum hamisha",
@@ -202,18 +196,11 @@ Content-Type: application/json
       "id": 1,
       "name": null,
       "type": "private",
-      "participants": [
-        {
-          "id": 1,
-          "username": "john_doe",
-          "name": "John Doe"
-        },
-        {
-          "id": 2,
-          "username": "alice_smith",
-          "name": "Alice Smith"
-        }
-      ]
+      "participant_ids": "1,2",
+      "participant_phones": "+998901234567,+998902345678",
+      "participant_names": "John Doe,Alice Smith",
+      "created_at": "2026-04-19 10:30:00",
+      "created_at_uz": "2026-04-19 15:30:00"
     }
   }
 }
@@ -229,18 +216,11 @@ Content-Type: application/json
       "id": 3,
       "name": null,
       "type": "private",
-      "participants": [
-        {
-          "id": 1,
-          "username": "john_doe",
-          "name": "John Doe"
-        },
-        {
-          "id": 4,
-          "username": "new_user",
-          "name": "New User"
-        }
-      ]
+      "participant_ids": "1,4",
+      "participant_phones": "+998901234567,+998909999999",
+      "participant_names": "John Doe,New User",
+      "created_at": "2026-04-19 10:35:00",
+      "created_at_uz": "2026-04-19 15:35:00"
     }
   }
 }
@@ -271,18 +251,11 @@ GET /api/chats/1
       "id": 1,
       "name": null,
       "type": "private",
-      "participants": [
-        {
-          "id": 1,
-          "username": "john_doe",
-          "name": "John Doe"
-        },
-        {
-          "id": 2,
-          "username": "alice_smith",
-          "name": "Alice Smith"
-        }
-      ]
+      "participant_ids": "1,2",
+      "participant_phones": "+998901234567,+998902345678",
+      "participant_names": "John Doe,Alice Smith",
+      "created_at": "2026-04-19 10:30:00",
+      "created_at_uz": "2026-04-19 15:30:00"
     }
   }
 }
@@ -321,7 +294,6 @@ GET /api/chats/1/messages?limit=20&offset=0
         "content": "Salomu aleykum!",
         "sent_at": "2026-04-19 10:00:00",
         "sent_at_uz": "2026-04-19 15:00:00",
-        "sender_username": "john_doe",
         "sender_name": "John Doe",
         "sender_phone": "+998901234567"
       },
@@ -332,7 +304,6 @@ GET /api/chats/1/messages?limit=20&offset=0
         "content": "Aleykum assalom! Qal holinasan?",
         "sent_at": "2026-04-19 10:02:15",
         "sent_at_uz": "2026-04-19 15:02:15",
-        "sender_username": "alice_smith",
         "sender_name": "Alice Smith",
         "sender_phone": "+998902345678"
       }
@@ -373,13 +344,43 @@ Content-Type: application/json
       "content": "Bu yangi xabar!",
       "sent_at": "2026-04-19 15:30:45",
       "sent_at_uz": "2026-04-19 20:30:45",
-      "sender_username": "john_doe",
       "sender_name": "John Doe",
       "sender_phone": "+998901234567"
     }
   }
 }
 ```
+
+---
+
+### 🔟 **DELETE MESSAGE - Chatdagi Xabarni O'chirish**
+```
+DELETE /api/chats/{chatId}/messages/{messageId}
+```
+**Headers:**
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+**Example:**
+```
+DELETE /api/chats/1/messages/3
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Xabar o'chirildi",
+  "data": {
+    "messageId": 3,
+    "chatId": 1,
+    "deleted": true
+  }
+}
+```
+
+Eslatma: faqat xabar yuborgan foydalanuvchi o‘chira oladi.
 
 ---
 
@@ -470,7 +471,6 @@ socket.on('new_message', (response) => {
   //       content: "Salomu aleykum hamisha!",
   //       sent_at: "2026-04-19 16:00:00",
   //       sent_at_uz: "2026-04-19 21:00:00",
-  //       sender_username: "john_doe",
   //       sender_name: "John Doe",
   //       sender_phone: "+998901234567"
   //     }
@@ -501,7 +501,11 @@ socket.on('chat_created', (response) => {
   //       id: 4,
   //       name: null,
   //       type: "private",
-  //       participants: [...]
+  //       participant_ids: "1,3",
+  //       participant_phones: "+998901234567,+998903456789",
+  //       participant_names: "John Doe,Bob Wilson",
+  //       created_at: "2026-04-19 10:35:00",
+  //       created_at_uz: "2026-04-19 15:35:00"
   //     }
   //   }
   // }
@@ -546,7 +550,8 @@ socket.on('user_typing', (data) => {
   console.log(data);
   // {
   //   userId: 1,
-  //   username: "john_doe",
+  //   name: "John Doe",
+  //   phone: "+998901234567",
   //   isTyping: true
   // }
 });

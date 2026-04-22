@@ -14,7 +14,7 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:4000',
+        url: 'http://localhost:4444',
         description: 'Development server'
       }
     ],
@@ -29,16 +29,11 @@ const options = {
       schemas: {
         User: {
           type: 'object',
-          required: ['username', 'name', 'phone', 'password'],
+          required: ['name', 'phone', 'password'],
           properties: {
             id: {
               type: 'integer',
               description: 'Foydalanuvchi ID'
-            },
-            username: {
-              type: 'string',
-              description: 'Unique username',
-              example: 'john_doe'
             },
             name: {
               type: 'string',
@@ -78,10 +73,6 @@ const options = {
               type: 'string',
               enum: ['private', 'group'],
               description: 'Chat turi'
-            },
-            participant_usernames: {
-              type: 'string',
-              description: 'Ishtirokchilar usernamelari (vergul bilan ajratilgan)'
             },
             participant_phones: {
               type: 'string',
@@ -130,10 +121,6 @@ const options = {
               type: 'integer',
               description: 'Yuboruvchi ID'
             },
-            sender_username: {
-              type: 'string',
-              description: 'Yuboruvchi username'
-            },
             sender_name: {
               type: 'string',
               description: 'Yuboruvchi ismi'
@@ -176,13 +163,8 @@ const options = {
         },
         RegisterRequest: {
           type: 'object',
-          required: ['username', 'name', 'phone', 'password'],
+          required: ['name', 'phone', 'password'],
           properties: {
-            username: {
-              type: 'string',
-              description: 'Unique username',
-              example: 'john_doe'
-            },
             name: {
               type: 'string',
               description: 'To\'liq ism',
@@ -203,12 +185,12 @@ const options = {
         },
         LoginRequest: {
           type: 'object',
-          required: ['username', 'password'],
+          required: ['phone', 'password'],
           properties: {
-            username: {
+            phone: {
               type: 'string',
-              description: 'Username',
-              example: 'john_doe'
+              description: 'Telefon raqam',
+              example: '+998901234567'
             },
             password: {
               type: 'string',

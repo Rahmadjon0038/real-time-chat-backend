@@ -104,7 +104,7 @@ io.use(authenticateSocket);
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.user.username} (ID: ${socket.userId})`);
+    console.log(`User connected: ${socket.user.phone} (ID: ${socket.userId})`);
 
     // Join user to their personal room
     socket.join(`user_${socket.userId}`);
@@ -213,6 +213,66 @@ io.on('connection', (socket) => {
         }
     });
 
+    // Delete message (only sender can delete)
+    socket.on('delete_message', async (data) => {
+        try {
+            const { chatId, messageId } = data || {};
+
+            if (!chatId || !messageId) {
+                socket.emit('error', {
+                    success: false,
+                    message: 'Chat ID va message ID kerak'
+                });
+                return;
+            }
+
+            const isParticipant = await Chat.isParticipant(chatId, socket.userId);
+            if (!isParticipant) {
+                socket.emit('error', {
+                    success: false,
+                    message: 'Bu chatga kirish huquqingiz yo\'q'
+                });
+                return;
+            }
+
+            const result = await Message.deleteInChat(parseInt(messageId), parseInt(chatId), socket.userId);
+
+            if (result.deleted) {
+                io.to(`chat_${chatId}`).emit('message_deleted', {
+                    success: true,
+                    data: {
+                        chatId: parseInt(chatId),
+                        messageId: parseInt(messageId)
+                    }
+                });
+            } else {
+                socket.emit('error', {
+                    success: false,
+                    message: 'Xabar o\'chirilmadi'
+                });
+            }
+        } catch (error) {
+            const msg = String(error && error.message ? error.message : error);
+            if (msg === 'Message not found') {
+                socket.emit('error', { success: false, message: 'Xabar topilmadi' });
+                return;
+            }
+            if (msg === 'Unauthorized') {
+                socket.emit('error', { success: false, message: 'Bu xabarni o\'chirish huquqingiz yo\'q' });
+                return;
+            }
+            if (msg === 'Message does not belong to this chat') {
+                socket.emit('error', { success: false, message: 'Xabar ushbu chatga tegishli emas' });
+                return;
+            }
+            console.error('Delete message error:', error);
+            socket.emit('error', {
+                success: false,
+                message: 'Xabar o\'chirishda xatolik'
+            });
+        }
+    });
+
     // Create or get chat
     socket.on('create_chat', async (data) => {
         try {
@@ -316,7 +376,7 @@ io.on('connection', (socket) => {
         const { chatId, isTyping } = data;
         socket.to(`chat_${chatId}`).emit('user_typing', {
             userId: socket.userId,
-            username: socket.user.username,
+            name: socket.user.name,
             phone: socket.user.phone,
             isTyping
         });
@@ -324,7 +384,7 @@ io.on('connection', (socket) => {
 
     // Handle disconnect
     socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.user.username} (ID: ${socket.userId})`);
+        console.log(`User disconnected: ${socket.user.phone} (ID: ${socket.userId})`);
     });
 });
 

@@ -4,7 +4,7 @@ SQLite3 va Socket.IO ishlatilgan real vaqt chat ilovasi backend'i.
 
 ## Xususiyatlari
 
-- ✅ Foydalanuvchi ro'yxatdan o'tishi (username, ism, telefon)
+- ✅ Foydalanuvchi ro'yxatdan o'tishi (ism, telefon)
 - ✅ Tizimga kirish (login/logout)
 - ✅ Real vaqt xabar almashish
 - ✅ Shaxsiy chat yaratish
@@ -83,7 +83,6 @@ Yangi foydalanuvchi ro'yxatdan o'tkazish.
 
 ```json
 {
-  "username": "john_doe",
   "name": "John Doe", 
   "phone": "+998901234567",
   "password": "parol123"
@@ -95,7 +94,7 @@ Tizimga kirish.
 
 ```json
 {
-  "username": "john_doe",
+  "phone": "+998901234567",
   "password": "parol123"
 }
 ```
@@ -139,6 +138,9 @@ Chat'ga xabar yuborish. (Bearer token kerak)
 }
 ```
 
+#### DELETE /api/chats/:chatId/messages/:messageId
+Chatdagi xabarni o'chirish (faqat yuborgan user o'chira oladi). (Bearer token kerak)
+
 ## Socket.IO Events
 
 ### Client -> Server
@@ -180,6 +182,15 @@ Yozish indikatori.
 }
 ```
 
+#### `delete_message`
+Xabarni o'chirish.
+```json
+{
+  "chatId": 1,
+  "messageId": 10
+}
+```
+
 ### Server -> Client
 
 #### `joined_chats`
@@ -200,6 +211,9 @@ Boshqa foydalanuvchi siz bilan chat yaratganligi haqida.
 #### `user_typing`
 Boshqa foydalanuvchi yozayotganligi haqida.
 
+#### `message_deleted`
+Xabar o'chirilganligi haqida.
+
 #### `error`
 Xatolik haqida xabar.
 
@@ -207,7 +221,6 @@ Xatolik haqida xabar.
 
 ### users
 - id (INTEGER, PRIMARY KEY)
-- username (TEXT, UNIQUE)
 - name (TEXT)
 - phone (TEXT, UNIQUE)
 - password (TEXT, hashed)

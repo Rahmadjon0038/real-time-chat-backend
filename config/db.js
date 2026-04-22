@@ -15,17 +15,88 @@ const db = new sqlite3.Database(DB_PATH, (err) => {
 
 // Initialize database tables
 const initDB = () => {
-    // Users table
+    // Users table (username removed; phone-based auth)
     db.run(`
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
             name TEXT NOT NULL,
             phone TEXT NOT NULL,
             password TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
+
+    // Lightweight migration: if old schema had "username", recreate users table without it.
+    db.serialize(() => {
+        db.all(`PRAGMA table_info(users)`, [], (err, columns) => {
+            if (err || !Array.isArray(columns)) return;
+
+            const hasUsername = columns.some((c) => c && c.name === 'username');
+            if (!hasUsername) return;
+
+            db.run('PRAGMA foreign_keys = OFF');
+            db.run('BEGIN TRANSACTION');
+
+            db.run(
+                `
+                CREATE TABLE IF NOT EXISTS users_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    phone TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+                `,
+                [],
+                (createErr) => {
+                    if (createErr) {
+                        console.warn('Users table migration failed (create users_new):', createErr.message);
+                        db.run('ROLLBACK');
+                        db.run('PRAGMA foreign_keys = ON');
+                        return;
+                    }
+
+                    db.run(
+                        `
+                        INSERT INTO users_new (id, name, phone, password, created_at)
+                        SELECT id, name, phone, password, created_at FROM users
+                        `,
+                        [],
+                        (copyErr) => {
+                            if (copyErr) {
+                                console.warn('Users table migration failed (copy data):', copyErr.message);
+                                db.run('ROLLBACK');
+                                db.run('PRAGMA foreign_keys = ON');
+                                return;
+                            }
+
+                            db.run(`DROP TABLE users`, [], (dropErr) => {
+                                if (dropErr) {
+                                    console.warn('Users table migration failed (drop old users):', dropErr.message);
+                                    db.run('ROLLBACK');
+                                    db.run('PRAGMA foreign_keys = ON');
+                                    return;
+                                }
+
+                                db.run(`ALTER TABLE users_new RENAME TO users`, [], (renameErr) => {
+                                    if (renameErr) {
+                                        console.warn('Users table migration failed (rename users_new):', renameErr.message);
+                                        db.run('ROLLBACK');
+                                        db.run('PRAGMA foreign_keys = ON');
+                                        return;
+                                    }
+
+                                    db.run('COMMIT', [], () => {
+                                        db.run('PRAGMA foreign_keys = ON');
+                                    });
+                                });
+                            });
+                        }
+                    );
+                }
+            );
+        });
+    });
 
     // Ensure phone is unique (needed for finding users by phone)
     db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone)`, (err) => {

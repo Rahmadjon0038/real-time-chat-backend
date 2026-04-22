@@ -317,4 +317,42 @@ router.get('/:chatId/messages', chatController.getChatMessages);
  */
 router.post('/:chatId/messages', chatController.sendMessage);
 
+/**
+ * @swagger
+ * /api/chats/{chatId}/messages/{messageId}:
+ *   delete:
+ *     summary: Chatdagi xabarni o'chirish
+ *     description: Faqat xabar yuborgan foydalanuvchi o'chira oladi
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Chat ID
+ *       - in: path
+ *         name: messageId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Message ID
+ *     responses:
+ *       200:
+ *         description: Xabar o'chirildi
+ *       400:
+ *         description: Xabar ushbu chatga tegishli emas
+ *       403:
+ *         description: Ruxsat yo'q yoki bu xabar sizniki emas
+ *       404:
+ *         description: Xabar topilmadi
+ *       401:
+ *         description: Token noto'g'ri yoki yo'q
+ *       500:
+ *         description: Server xatosi
+ */
+router.delete('/:chatId/messages/:messageId', chatController.deleteMessage);
+
 module.exports = router;

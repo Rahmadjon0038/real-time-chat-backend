@@ -28,7 +28,6 @@ class Message {
             const sql = `
                 SELECT 
                     m.*,
-                    u.username as sender_username,
                     u.name as sender_name,
                     u.phone as sender_phone
                 FROM messages m
@@ -52,7 +51,6 @@ class Message {
             const sql = `
                 SELECT 
                     m.*,
-                    u.username as sender_username,
                     u.name as sender_name,
                     u.phone as sender_phone
                 FROM messages m
@@ -87,6 +85,34 @@ class Message {
                     reject(new Error('Unauthorized'));
                 } else {
                     // Delete message
+                    const deleteSql = `DELETE FROM messages WHERE id = ?`;
+                    db.run(deleteSql, [messageId], function(err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve({ deleted: this.changes > 0 });
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    // Delete message inside a specific chat (safer for APIs)
+    static async deleteInChat(messageId, chatId, userId) {
+        return new Promise((resolve, reject) => {
+            const checkSql = `SELECT sender_id, chat_id FROM messages WHERE id = ?`;
+
+            db.get(checkSql, [messageId], (err, row) => {
+                if (err) {
+                    reject(err);
+                } else if (!row) {
+                    reject(new Error('Message not found'));
+                } else if (parseInt(row.chat_id) !== parseInt(chatId)) {
+                    reject(new Error('Message does not belong to this chat'));
+                } else if (row.sender_id !== userId) {
+                    reject(new Error('Unauthorized'));
+                } else {
                     const deleteSql = `DELETE FROM messages WHERE id = ?`;
                     db.run(deleteSql, [messageId], function(err) {
                         if (err) {

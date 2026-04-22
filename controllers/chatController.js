@@ -220,10 +220,51 @@ const getChatDetails = async (req, res) => {
     }
 };
 
+// Delete a message (only sender can delete)
+const deleteMessage = async (req, res) => {
+    try {
+        const { chatId, messageId } = req.params;
+
+        // Check if user is participant of this chat
+        const isParticipant = await Chat.isParticipant(chatId, req.userId);
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: 'Bu chatga kirish huquqingiz yo\'q'
+            });
+        }
+
+        const result = await Message.deleteInChat(parseInt(messageId), parseInt(chatId), req.userId);
+        return res.json({
+            success: true,
+            message: 'Xabar o\'chirildi',
+            data: {
+                messageId: parseInt(messageId),
+                chatId: parseInt(chatId),
+                deleted: result.deleted
+            }
+        });
+    } catch (error) {
+        const msg = String(error && error.message ? error.message : error);
+        if (msg === 'Message not found') {
+            return res.status(404).json({ success: false, message: 'Xabar topilmadi' });
+        }
+        if (msg === 'Unauthorized') {
+            return res.status(403).json({ success: false, message: 'Bu xabarni o\'chirish huquqingiz yo\'q' });
+        }
+        if (msg === 'Message does not belong to this chat') {
+            return res.status(400).json({ success: false, message: 'Xabar ushbu chatga tegishli emas' });
+        }
+        console.error('Delete message error:', error);
+        return res.status(500).json({ success: false, message: 'Server xatosi' });
+    }
+};
+
 module.exports = {
     getUserChats,
     createOrGetChat,
     getChatMessages,
     sendMessage,
-    getChatDetails
+    getChatDetails,
+    deleteMessage
 };

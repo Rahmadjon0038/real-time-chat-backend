@@ -38,7 +38,7 @@ const authMiddleware = require('../middleware/auth');
  *                       type: string
  *                       description: JWT token
  *       400:
- *         description: Noto'g'ri ma'lumotlar yoki username allaqachon mavjud
+ *         description: Noto'g'ri ma'lumotlar yoki telefon raqam allaqachon mavjud
  *         content:
  *           application/json:
  *             schema:
@@ -87,7 +87,7 @@ router.post('/register', authController.register);
  *                       type: string
  *                       description: JWT token
  *       401:
- *         description: Noto'g'ri username yoki parol
+ *         description: Noto'g'ri telefon raqam yoki parol
  *         content:
  *           application/json:
  *             schema:

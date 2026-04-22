@@ -7,23 +7,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 // Register new user
 const register = async (req, res) => {
     try {
-        const { username, name, phone, password } = req.body;
+        const { name, phone, password } = req.body;
         const normalizedPhone = normalizePhone(phone);
 
         // Validate input
-        if (!username || !name || !phone || !password) {
+        if (!name || !phone || !password) {
             return res.status(400).json({
                 success: false,
                 message: 'Barcha maydonlar to\'ldirilishi kerak'
-            });
-        }
-
-        // Check if username already exists
-        const existingUser = await User.findByUsername(username);
-        if (existingUser) {
-            return res.status(400).json({
-                success: false,
-                message: 'Bu username allaqachon mavjud'
             });
         }
 
@@ -47,7 +38,7 @@ const register = async (req, res) => {
         }
 
         // Create new user
-        const user = await User.create({ username, name, phone: normalizedPhone || phone, password });
+        const user = await User.create({ name, phone: normalizedPhone || phone, password });
 
         // Generate JWT token
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
@@ -58,7 +49,6 @@ const register = async (req, res) => {
             data: {
                 user: {
                     id: user.id,
-                    username: user.username,
                     name: user.name,
                     phone: user.phone
                 },
@@ -78,22 +68,33 @@ const register = async (req, res) => {
 // Login user
 const login = async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const { phone, password } = req.body;
 
         // Validate input
-        if (!username || !password) {
+        if (!phone || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Username va parol kiritilishi kerak'
+                message: 'Telefon raqam va parol kiritilishi kerak'
             });
         }
 
         // Find user
-        const user = await User.findByUsername(username);
+        let user;
+        try {
+            user = await User.findByPhone(phone);
+        } catch (e) {
+            if (e && e.code === 'PHONE_NOT_UNIQUE') {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Bu telefon raqami bir nechta foydalanuvchida bor (DB xatosi)'
+                });
+            }
+            throw e;
+        }
         if (!user) {
             return res.status(401).json({
                 success: false,
-                message: 'Noto\'g\'ri username yoki parol'
+                message: 'Noto\'g\'ri telefon raqam yoki parol'
             });
         }
 
@@ -102,7 +103,7 @@ const login = async (req, res) => {
         if (!isValidPassword) {
             return res.status(401).json({
                 success: false,
-                message: 'Noto\'g\'ri username yoki parol'
+                message: 'Noto\'g\'ri telefon raqam yoki parol'
             });
         }
 
@@ -115,7 +116,6 @@ const login = async (req, res) => {
             data: {
                 user: {
                     id: user.id,
-                    username: user.username,
                     name: user.name,
                     phone: user.phone
                 },

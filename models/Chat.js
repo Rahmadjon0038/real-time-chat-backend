@@ -59,7 +59,6 @@ class Chat {
             const sql = `
                 SELECT 
                     c.*,
-                    GROUP_CONCAT(u.username) as participant_usernames,
                     GROUP_CONCAT(u.phone) as participant_phones,
                     GROUP_CONCAT(u.name) as participant_names,
                     (SELECT content FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message,
@@ -112,7 +111,6 @@ class Chat {
                 SELECT 
                     c.*,
                     GROUP_CONCAT(u.id) as participant_ids,
-                    GROUP_CONCAT(u.username) as participant_usernames,
                     GROUP_CONCAT(u.phone) as participant_phones,
                     GROUP_CONCAT(u.name) as participant_names
                 FROM chats c
