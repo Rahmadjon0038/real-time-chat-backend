@@ -83,6 +83,10 @@ const options = {
               type: 'string',
               description: 'Ishtirokchilar usernamelari (vergul bilan ajratilgan)'
             },
+            participant_phones: {
+              type: 'string',
+              description: 'Ishtirokchilar telefon raqamlari (vergul bilan ajratilgan)'
+            },
             participant_names: {
               type: 'string',
               description: 'Ishtirokchilar ismlari (vergul bilan ajratilgan)'
@@ -96,10 +100,18 @@ const options = {
               format: 'date-time',
               description: 'Oxirgi xabar vaqti'
             },
+            last_message_time_uz: {
+              type: 'string',
+              description: 'Oxirgi xabar vaqti (Asia/Tashkent, YYYY-MM-DD HH:mm:ss)'
+            },
             created_at: {
               type: 'string',
               format: 'date-time',
               description: 'Yaratilgan vaqt'
+            },
+            created_at_uz: {
+              type: 'string',
+              description: 'Yaratilgan vaqt (Asia/Tashkent, YYYY-MM-DD HH:mm:ss)'
             }
           }
         },
@@ -126,6 +138,10 @@ const options = {
               type: 'string',
               description: 'Yuboruvchi ismi'
             },
+            sender_phone: {
+              type: 'string',
+              description: 'Yuboruvchi telefon raqami'
+            },
             content: {
               type: 'string',
               description: 'Xabar matni'
@@ -134,6 +150,10 @@ const options = {
               type: 'string',
               format: 'date-time',
               description: 'Yuborilgan vaqt'
+            },
+            sent_at_uz: {
+              type: 'string',
+              description: 'Yuborilgan vaqt (Asia/Tashkent, YYYY-MM-DD HH:mm:ss)'
             }
           }
         },
@@ -199,12 +219,12 @@ const options = {
         },
         CreateChatRequest: {
           type: 'object',
-          required: ['targetUsername'],
+          required: ['targetPhone'],
           properties: {
-            targetUsername: {
+            targetPhone: {
               type: 'string',
-              description: 'Chat ochmoqchi bo\'lgan foydalanuvchi username',
-              example: 'jane_doe'
+              description: 'Chat ochmoqchi bo\'lgan foydalanuvchi telefon raqami',
+              example: '+998901234567'
             }
           }
         },

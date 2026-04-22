@@ -26,18 +26,30 @@ const getUserChats = async (req, res) => {
 // Create new chat or get existing private chat
 const createOrGetChat = async (req, res) => {
     try {
-        const { targetUsername } = req.body;
+        const { targetPhone } = req.body;
 
         // Validate input
-        if (!targetUsername) {
+        if (!targetPhone) {
             return res.status(400).json({
                 success: false,
-                message: 'Target username kiritilishi kerak'
+                message: 'Target phone kiritilishi kerak'
             });
         }
 
         // Find target user
-        const targetUser = await User.findByUsername(targetUsername);
+        let targetUser;
+        try {
+            targetUser = await User.findByPhone(targetPhone);
+        } catch (e) {
+            if (e && e.code === 'PHONE_NOT_UNIQUE') {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Bu telefon raqami bir nechta foydalanuvchida bor (DB xatosi)'
+                });
+            }
+            throw e;
+        }
+
         if (!targetUser) {
             return res.status(404).json({
                 success: false,

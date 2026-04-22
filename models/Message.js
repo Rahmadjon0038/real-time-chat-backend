@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { decorateUzTime } = require('../utils/time');
 
 class Message {
     // Create a new message
@@ -28,7 +29,8 @@ class Message {
                 SELECT 
                     m.*,
                     u.username as sender_username,
-                    u.name as sender_name
+                    u.name as sender_name,
+                    u.phone as sender_phone
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
                 WHERE m.id = ?
@@ -38,7 +40,7 @@ class Message {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(row);
+                    resolve(decorateUzTime(row, ['sent_at']));
                 }
             });
         });
@@ -51,7 +53,8 @@ class Message {
                 SELECT 
                     m.*,
                     u.username as sender_username,
-                    u.name as sender_name
+                    u.name as sender_name,
+                    u.phone as sender_phone
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
                 WHERE m.chat_id = ?
@@ -63,7 +66,7 @@ class Message {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows);
+                    resolve(rows.map((r) => decorateUzTime(r, ['sent_at'])));
                 }
             });
         });

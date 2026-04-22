@@ -162,9 +162,11 @@ Authorization: Bearer <JWT_TOKEN>
         "name": "Jamshid Group",
         "type": "group",
         "participant_usernames": "john_doe,bob_wilson",
+        "participant_phones": "+998901234567,+998903456789",
         "participant_names": "John Doe,Bob Wilson",
         "last_message": "Assalomualaikum hamisha",
-        "last_message_time": "2026-04-19 14:20:10"
+        "last_message_time": "2026-04-19 14:20:10",
+        "last_message_time_uz": "2026-04-19 19:20:10"
       }
     ]
   }
@@ -186,7 +188,7 @@ Content-Type: application/json
 **Nima Yuborish Kerak:**
 ```json
 {
-  "targetUsername": "alice_smith"
+  "targetPhone": "+998902345678"
 }
 ```
 
@@ -318,8 +320,10 @@ GET /api/chats/1/messages?limit=20&offset=0
         "sender_id": 1,
         "content": "Salomu aleykum!",
         "sent_at": "2026-04-19 10:00:00",
+        "sent_at_uz": "2026-04-19 15:00:00",
         "sender_username": "john_doe",
-        "sender_name": "John Doe"
+        "sender_name": "John Doe",
+        "sender_phone": "+998901234567"
       },
       {
         "id": 2,
@@ -327,8 +331,10 @@ GET /api/chats/1/messages?limit=20&offset=0
         "sender_id": 2,
         "content": "Aleykum assalom! Qal holinasan?",
         "sent_at": "2026-04-19 10:02:15",
+        "sent_at_uz": "2026-04-19 15:02:15",
         "sender_username": "alice_smith",
-        "sender_name": "Alice Smith"
+        "sender_name": "Alice Smith",
+        "sender_phone": "+998902345678"
       }
     ]
   }
@@ -366,8 +372,10 @@ Content-Type: application/json
       "sender_id": 1,
       "content": "Bu yangi xabar!",
       "sent_at": "2026-04-19 15:30:45",
+      "sent_at_uz": "2026-04-19 20:30:45",
       "sender_username": "john_doe",
-      "sender_name": "John Doe"
+      "sender_name": "John Doe",
+      "sender_phone": "+998901234567"
     }
   }
 }
@@ -461,8 +469,10 @@ socket.on('new_message', (response) => {
   //       sender_id: 1,
   //       content: "Salomu aleykum hamisha!",
   //       sent_at: "2026-04-19 16:00:00",
+  //       sent_at_uz: "2026-04-19 21:00:00",
   //       sender_username: "john_doe",
-  //       sender_name: "John Doe"
+  //       sender_name: "John Doe",
+  //       sender_phone: "+998901234567"
   //     }
   //   }
   // }
@@ -475,7 +485,7 @@ socket.on('new_message', (response) => {
 **Yuboriladi (Emit):**
 ```javascript
 socket.emit('create_chat', {
-  targetUsername: 'bob_wilson'
+  targetPhone: '+998903456789'
 });
 ```
 

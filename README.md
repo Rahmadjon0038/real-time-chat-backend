@@ -116,7 +116,7 @@ Yangi chat yaratish yoki mavjudini topish.
 
 ```json
 {
-  "targetUsername": "jane_doe"
+  "targetPhone": "+998901234567"
 }
 ```
 
@@ -167,7 +167,7 @@ Xabar yuborish.
 Yangi chat yaratish.
 ```json
 {
-  "targetUsername": "jane_doe"
+  "targetPhone": "+998901234567"
 }
 ```
 
@@ -209,7 +209,7 @@ Xatolik haqida xabar.
 - id (INTEGER, PRIMARY KEY)
 - username (TEXT, UNIQUE)
 - name (TEXT)
-- phone (TEXT)
+- phone (TEXT, UNIQUE)
 - password (TEXT, hashed)
 - created_at (DATETIME)
 
@@ -238,6 +238,7 @@ Xatolik haqida xabar.
 
 ```env
 DB_PATH=./chat.db
+APP_TIMEZONE=Asia/Tashkent
 JWT_SECRET=your-very-secure-secret-key
 PORT=4444
 NODE_ENV=development

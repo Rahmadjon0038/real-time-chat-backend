@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { normalizePhone } = require('../utils/phone');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -7,6 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const register = async (req, res) => {
     try {
         const { username, name, phone, password } = req.body;
+        const normalizedPhone = normalizePhone(phone);
 
         // Validate input
         if (!username || !name || !phone || !password) {
@@ -25,8 +27,27 @@ const register = async (req, res) => {
             });
         }
 
+        // Check if phone already exists
+        try {
+            const existingPhoneUser = await User.findByPhone(normalizedPhone || phone);
+            if (existingPhoneUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Bu telefon raqami allaqachon mavjud'
+                });
+            }
+        } catch (e) {
+            if (e && e.code === 'PHONE_NOT_UNIQUE') {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Bu telefon raqami bir nechta foydalanuvchida bor (DB xatosi)'
+                });
+            }
+            throw e;
+        }
+
         // Create new user
-        const user = await User.create({ username, name, phone, password });
+        const user = await User.create({ username, name, phone: normalizedPhone || phone, password });
 
         // Generate JWT token
         const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });

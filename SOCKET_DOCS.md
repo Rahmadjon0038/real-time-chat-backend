@@ -82,14 +82,14 @@ Yangi chat yaratish yoki mavjudini topish.
 **Parameters:**
 ```typescript
 {
-  targetUsername: string;
+  targetPhone: string;
 }
 ```
 
 **Example:**
 ```javascript
 socket.emit('create_chat', {
-  targetUsername: 'jane_doe'
+  targetPhone: '+998901234567'
 });
 ```
 
@@ -184,8 +184,10 @@ Yangi xabar kelganligi haqida.
       sender_id: number;
       sender_username: string;
       sender_name: string;
+      sender_phone: string;
       content: string;
       sent_at: string;
+      sent_at_uz: string;
     }
   }
 }
@@ -216,8 +218,10 @@ Yangi chat yaratilganligi yoki mavjud chat topilganligi haqida.
       type: 'private' | 'group';
       participant_ids: string;
       participant_usernames: string;
+      participant_phones: string;
       participant_names: string;
       created_at: string;
+      created_at_uz: string;
     }
   }
 }
@@ -272,6 +276,7 @@ Boshqa foydalanuvchi yozayotganligi haqida.
 {
   userId: number;
   username: string;
+  phone: string;
   isTyping: boolean;
 }
 ```
@@ -365,9 +370,9 @@ function sendMessage(chatId, content) {
 }
 
 // Chat yaratish funksiyasi
-function createChat(targetUsername) {
+function createChat(targetPhone) {
   socket.emit('create_chat', {
-    targetUsername: targetUsername
+    targetPhone: targetPhone
   });
 }
 

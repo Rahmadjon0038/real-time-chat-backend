@@ -27,6 +27,24 @@ const initDB = () => {
         )
     `);
 
+    // Ensure phone is unique (needed for finding users by phone)
+    db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone)`, (err) => {
+        if (err) {
+            // Don't crash on existing bad data; just log for visibility.
+            console.warn('Could not create unique index on users.phone:', err.message);
+            db.all(
+                `SELECT phone, COUNT(*) as count FROM users GROUP BY phone HAVING count > 1`,
+                [],
+                (dupErr, rows) => {
+                    if (dupErr) return;
+                    if (rows && rows.length > 0) {
+                        console.warn('Duplicate phone values detected in users table:', rows);
+                    }
+                }
+            );
+        }
+    });
+
     // Chats table
     db.run(`
         CREATE TABLE IF NOT EXISTS chats (

@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { decorateUzTime } = require('../utils/time');
 
 class Chat {
     // Create a new chat between users
@@ -59,6 +60,7 @@ class Chat {
                 SELECT 
                     c.*,
                     GROUP_CONCAT(u.username) as participant_usernames,
+                    GROUP_CONCAT(u.phone) as participant_phones,
                     GROUP_CONCAT(u.name) as participant_names,
                     (SELECT content FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message,
                     (SELECT sent_at FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message_time
@@ -75,7 +77,7 @@ class Chat {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(rows);
+                    resolve(rows.map((r) => decorateUzTime(r, ['last_message_time', 'created_at'])));
                 }
             });
         });
@@ -111,6 +113,7 @@ class Chat {
                     c.*,
                     GROUP_CONCAT(u.id) as participant_ids,
                     GROUP_CONCAT(u.username) as participant_usernames,
+                    GROUP_CONCAT(u.phone) as participant_phones,
                     GROUP_CONCAT(u.name) as participant_names
                 FROM chats c
                 JOIN chat_participants cp ON c.id = cp.chat_id
@@ -123,7 +126,7 @@ class Chat {
                 if (err) {
                     reject(err);
                 } else {
-                    resolve(row);
+                    resolve(decorateUzTime(row, ['created_at']));
                 }
             });
         });

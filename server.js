@@ -216,18 +216,30 @@ io.on('connection', (socket) => {
     // Create or get chat
     socket.on('create_chat', async (data) => {
         try {
-            const { targetUsername } = data;
+            const { targetPhone } = data;
 
-            if (!targetUsername) {
+            if (!targetPhone) {
                 socket.emit('error', {
                     success: false,
-                    message: 'Target username kerak'
+                    message: 'Target phone kerak'
                 });
                 return;
             }
 
             // Find target user
-            const targetUser = await User.findByUsername(targetUsername);
+            let targetUser;
+            try {
+                targetUser = await User.findByPhone(targetPhone);
+            } catch (e) {
+                if (e && e.code === 'PHONE_NOT_UNIQUE') {
+                    socket.emit('error', {
+                        success: false,
+                        message: 'Bu telefon raqami bir nechta foydalanuvchida bor (DB xatosi)'
+                    });
+                    return;
+                }
+                throw e;
+            }
             if (!targetUser) {
                 socket.emit('error', {
                     success: false,
@@ -305,6 +317,7 @@ io.on('connection', (socket) => {
         socket.to(`chat_${chatId}`).emit('user_typing', {
             userId: socket.userId,
             username: socket.user.username,
+            phone: socket.user.phone,
             isTyping
         });
     });
