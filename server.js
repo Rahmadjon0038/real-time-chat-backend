@@ -112,10 +112,10 @@ io.on('connection', (socket) => {
     // Join user's chats
     socket.on('join_chats', async () => {
         try {
-            const chats = await Chat.getUserChats(socket.userId);
+            const chatIds = await Chat.getUserChatIds(socket.userId);
             
-            for (const chat of chats) {
-                socket.join(`chat_${chat.id}`);
+            for (const chatId of chatIds) {
+                socket.join(`chat_${chatId}`);
             }
 
             socket.emit('joined_chats', {
@@ -321,6 +321,9 @@ io.on('connection', (socket) => {
             let existingChat = await Chat.findPrivateChat(socket.userId, targetUser.id);
             
             if (existingChat) {
+                // If user previously hid this chat, bring it back
+                await Chat.unhideForUser(existingChat.id, socket.userId);
+
                 const chatDetails = await Chat.getById(existingChat.id);
                 
                 // Join both users to the chat room

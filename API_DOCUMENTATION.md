@@ -384,6 +384,38 @@ Eslatma: faqat xabar yuborgan foydalanuvchi o‘chira oladi.
 
 ---
 
+### 1️⃣1️⃣ **DELETE CHAT (HIDE) - Chatni Ro'yxatdan O'chirish**
+> Bu endpoint chatni **faqat sizning chatlar ro‘yxatingizdan** olib tashlaydi (boshqa participantlarda chat qoladi).
+>
+> Yangi xabar kelganida chat avtomatik qaytib chiqadi (conversation qayta “unhide” bo‘ladi).
+
+```
+DELETE /api/chats/{chatId}
+```
+**Headers:**
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+**Example:**
+```
+DELETE /api/chats/1
+```
+
+**Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Chat ro'yxatdan o'chirildi",
+  "data": {
+    "chatId": 1,
+    "hidden": true
+  }
+}
+```
+
+---
+
 ## 🔌 **SOCKET.IO REAL-TIME API'LARI**
 
 Socket.IO real-time xabarlashtirish uchun ishlatiladi. Avval server'ga ulanish kerak.

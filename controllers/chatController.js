@@ -69,6 +69,9 @@ const createOrGetChat = async (req, res) => {
         let existingChat = await Chat.findPrivateChat(req.userId, targetUser.id);
         
         if (existingChat) {
+            // If user previously hid this chat, bring it back
+            await Chat.unhideForUser(existingChat.id, req.userId);
+
             // Get chat details with participants
             const chatDetails = await Chat.getById(existingChat.id);
             return res.json({
@@ -220,6 +223,37 @@ const getChatDetails = async (req, res) => {
     }
 };
 
+// Hide chat from current user's chat list
+const hideChat = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+
+        const isParticipant = await Chat.isParticipant(chatId, req.userId);
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: 'Bu chatga kirish huquqingiz yo\'q'
+            });
+        }
+
+        const result = await Chat.hideForUser(parseInt(chatId), req.userId);
+        return res.json({
+            success: true,
+            message: 'Chat ro\'yxatdan o\'chirildi',
+            data: {
+                chatId: parseInt(chatId),
+                hidden: result.hidden
+            }
+        });
+    } catch (error) {
+        console.error('Hide chat error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
 // Delete a message (only sender can delete)
 const deleteMessage = async (req, res) => {
     try {
@@ -266,5 +300,6 @@ module.exports = {
     getChatMessages,
     sendMessage,
     getChatDetails,
+    hideChat,
     deleteMessage
 };

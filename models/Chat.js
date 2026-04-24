@@ -67,7 +67,7 @@ class Chat {
                 JOIN chat_participants cp ON c.id = cp.chat_id
                 LEFT JOIN chat_participants cp2 ON c.id = cp2.chat_id
                 LEFT JOIN users u ON cp2.user_id = u.id
-                WHERE cp.user_id = ?
+                WHERE cp.user_id = ? AND cp.hidden_at IS NULL
                 GROUP BY c.id
                 ORDER BY last_message_time DESC
             `;
@@ -99,6 +99,20 @@ class Chat {
                     reject(err);
                 } else {
                     resolve(row);
+                }
+            });
+        });
+    }
+
+    // Get user's chat IDs (includes hidden chats; useful for Socket.IO room join)
+    static async getUserChatIds(userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `SELECT chat_id FROM chat_participants WHERE user_id = ?`;
+            db.all(sql, [userId], (err, rows) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve((rows || []).map((r) => r.chat_id));
                 }
             });
         });
@@ -140,6 +154,44 @@ class Chat {
                     reject(err);
                 } else {
                     resolve(row.count > 0);
+                }
+            });
+        });
+    }
+
+    // Hide chat from user's chat list (soft-delete for that user)
+    static async hideForUser(chatId, userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                UPDATE chat_participants
+                SET hidden_at = CURRENT_TIMESTAMP
+                WHERE chat_id = ? AND user_id = ? AND hidden_at IS NULL
+            `;
+
+            db.run(sql, [chatId, userId], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ hidden: this.changes > 0 });
+                }
+            });
+        });
+    }
+
+    // Unhide chat for user (bring back to chat list)
+    static async unhideForUser(chatId, userId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                UPDATE chat_participants
+                SET hidden_at = NULL
+                WHERE chat_id = ? AND user_id = ? AND hidden_at IS NOT NULL
+            `;
+
+            db.run(sql, [chatId, userId], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ unhidden: this.changes > 0 });
                 }
             });
         });

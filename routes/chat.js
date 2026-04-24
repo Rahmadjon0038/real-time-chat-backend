@@ -319,6 +319,34 @@ router.post('/:chatId/messages', chatController.sendMessage);
 
 /**
  * @swagger
+ * /api/chats/{chatId}:
+ *   delete:
+ *     summary: Chatni ro'yxatdan o'chirish (hide)
+ *     description: Chatni faqat joriy foydalanuvchi chatlar ro'yxatidan olib tashlaydi (boshqa participantlarda qoladi). Yangi xabar kelsa chat qaytib chiqadi.
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Chat ID
+ *     responses:
+ *       200:
+ *         description: Chat ro'yxatdan o'chirildi
+ *       401:
+ *         description: Token noto'g'ri yoki yo'q
+ *       403:
+ *         description: Bu chatga kirish huquqingiz yo'q
+ *       500:
+ *         description: Server xatosi
+ */
+router.delete('/:chatId', chatController.hideChat);
+
+/**
+ * @swagger
  * /api/chats/{chatId}/messages/{messageId}:
  *   delete:
  *     summary: Chatdagi xabarni o'chirish

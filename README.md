@@ -141,6 +141,9 @@ Chat'ga xabar yuborish. (Bearer token kerak)
 #### DELETE /api/chats/:chatId/messages/:messageId
 Chatdagi xabarni o'chirish (faqat yuborgan user o'chira oladi). (Bearer token kerak)
 
+#### DELETE /api/chats/:chatId
+Chatni ro'yxatdan o'chirish (hide) — faqat joriy foydalanuvchi chatlar ro'yxatidan olib tashlaydi. (Bearer token kerak)
+
 ## Socket.IO Events
 
 ### Client -> Server

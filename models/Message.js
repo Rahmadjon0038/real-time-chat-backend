@@ -13,6 +13,15 @@ class Message {
                 if (err) {
                     reject(err);
                 } else {
+                    // If chat was hidden for any participant, bring it back on new messages
+                    db.run(
+                        `UPDATE chat_participants SET hidden_at = NULL WHERE chat_id = ? AND hidden_at IS NOT NULL`,
+                        [chatId],
+                        () => {
+                            // Ignore unhide errors here; message creation already succeeded
+                        }
+                    );
+
                     // Get the created message with sender info
                     Message.getById(this.lastID)
                         .then(message => resolve(message))

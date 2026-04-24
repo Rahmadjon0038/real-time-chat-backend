@@ -138,6 +138,21 @@ const initDB = () => {
         )
     `);
 
+    // Lightweight migration: add hidden_at to chat_participants for "hide chat" feature
+    db.serialize(() => {
+        db.all(`PRAGMA table_info(chat_participants)`, [], (err, columns) => {
+            if (err || !Array.isArray(columns)) return;
+            const hasHiddenAt = columns.some((c) => c && c.name === 'hidden_at');
+            if (hasHiddenAt) return;
+
+            db.run(`ALTER TABLE chat_participants ADD COLUMN hidden_at DATETIME`, (alterErr) => {
+                if (alterErr) {
+                    console.warn('Could not add hidden_at to chat_participants:', alterErr.message);
+                }
+            });
+        });
+    });
+
     // Messages table
     db.run(`
         CREATE TABLE IF NOT EXISTS messages (
