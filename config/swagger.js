@@ -67,6 +67,16 @@ const options = {
             }
           }
         },
+        UserPublic: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            phone: { type: 'string' },
+            profile_image: { type: 'string', nullable: true },
+            profile_image_url: { type: 'string', nullable: true }
+          }
+        },
         Chat: {
           type: 'object',
           properties: {
@@ -131,6 +141,21 @@ const options = {
               type: 'string',
               nullable: true,
               description: 'Oxirgi o\'qish vaqti'
+            },
+            participants: {
+              type: 'array',
+              description: 'Chat participantlari (frontend uchun qulay)',
+              items: { $ref: '#/components/schemas/UserPublic' }
+            },
+            display_name: {
+              type: 'string',
+              nullable: true,
+              description: 'Chat list uchun display nom (private bo\'lsa other user name)'
+            },
+            display_image_url: {
+              type: 'string',
+              nullable: true,
+              description: 'Chat list uchun display avatar (private bo\'lsa other user profile image)'
             }
           }
         },

@@ -155,6 +155,28 @@ class Chat {
         });
     }
 
+    static async getParticipants(chatId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT
+                    u.id,
+                    u.name,
+                    u.phone,
+                    u.profile_image,
+                    cp.joined_at
+                FROM chat_participants cp
+                JOIN users u ON cp.user_id = u.id
+                WHERE cp.chat_id = ?
+                ORDER BY u.id ASC
+            `;
+
+            db.all(sql, [chatId], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows || []);
+            });
+        });
+    }
+
     // Get read state for a chat (per participant)
     static async getReadState(chatId) {
         return new Promise((resolve, reject) => {

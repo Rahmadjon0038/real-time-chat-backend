@@ -2,15 +2,47 @@ const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
 
+const toAbsoluteUrl = (req, maybePath) => {
+    if (!maybePath) return null;
+    if (typeof maybePath !== 'string') return null;
+    if (maybePath.startsWith('http://') || maybePath.startsWith('https://')) return maybePath;
+    const host = req.get('host');
+    if (!host) return maybePath;
+    const p = maybePath.startsWith('/') ? maybePath : `/${maybePath}`;
+    return `${req.protocol}://${host}${p}`;
+};
+
+const decorateUserPublic = (req, user) => {
+    if (!user) return user;
+    return {
+        ...user,
+        profile_image_url: toAbsoluteUrl(req, user.profile_image || null)
+    };
+};
+
+const decorateChatForList = async (req, chat) => {
+    const participants = await Chat.getParticipants(chat.id);
+    const decoratedParticipants = (participants || []).map((p) => decorateUserPublic(req, p));
+    const other = decoratedParticipants.find((p) => parseInt(p.id) !== parseInt(req.userId)) || null;
+
+    return {
+        ...chat,
+        participants: decoratedParticipants,
+        display_name: chat.type === 'private' ? (other ? other.name : null) : (chat.name || null),
+        display_image_url: chat.type === 'private' ? (other ? other.profile_image_url : null) : null
+    };
+};
+
 // Get user's chats
 const getUserChats = async (req, res) => {
     try {
         const chats = await Chat.getUserChats(req.userId);
+        const enriched = await Promise.all((chats || []).map((c) => decorateChatForList(req, c)));
 
         res.json({
             success: true,
             data: {
-                chats
+                chats: enriched
             }
         });
 
@@ -275,10 +307,15 @@ const getChatDetails = async (req, res) => {
             });
         }
 
+        const participants = await Chat.getParticipants(parseInt(chatId));
+
         res.json({
             success: true,
             data: {
-                chat
+                chat: {
+                    ...chat,
+                    participants: (participants || []).map((p) => decorateUserPublic(req, p))
+                }
             }
         });
 
