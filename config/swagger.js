@@ -54,6 +54,16 @@ const options = {
               type: 'string',
               format: 'date-time',
               description: 'Yaratilgan vaqt'
+            },
+            profile_image: {
+              type: 'string',
+              nullable: true,
+              description: 'Profil rasmi (serverdagi path, masalan: /uploads/avatars/...)'
+            },
+            profile_image_url: {
+              type: 'string',
+              nullable: true,
+              description: 'Profil rasmi uchun to\'liq URL'
             }
           }
         },
@@ -82,6 +92,11 @@ const options = {
               type: 'string',
               description: 'Ishtirokchilar ismlari (vergul bilan ajratilgan)'
             },
+            participant_profile_images: {
+              type: 'string',
+              description: 'Ishtirokchilar profil rasmlari (vergul bilan ajratilgan)',
+              nullable: true
+            },
             last_message: {
               type: 'string',
               description: 'Oxirgi xabar matni'
@@ -103,6 +118,19 @@ const options = {
             created_at_uz: {
               type: 'string',
               description: 'Yaratilgan vaqt (Asia/Tashkent, YYYY-MM-DD HH:mm:ss)'
+            },
+            unread_count: {
+              type: 'integer',
+              description: 'Joriy foydalanuvchi uchun o\'qilmagan xabarlar soni'
+            },
+            my_last_read_message_id: {
+              type: 'integer',
+              description: 'Joriy foydalanuvchining oxirgi o\'qigan message ID'
+            },
+            my_last_read_at: {
+              type: 'string',
+              nullable: true,
+              description: 'Oxirgi o\'qish vaqti'
             }
           }
         },
@@ -128,6 +156,11 @@ const options = {
             sender_phone: {
               type: 'string',
               description: 'Yuboruvchi telefon raqami'
+            },
+            sender_profile_image: {
+              type: 'string',
+              nullable: true,
+              description: 'Yuboruvchi profil rasmi (path)'
             },
             content: {
               type: 'string',

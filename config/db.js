@@ -22,6 +22,7 @@ const initDB = () => {
             name TEXT NOT NULL,
             phone TEXT NOT NULL,
             password TEXT NOT NULL,
+            profile_image TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     `);
@@ -44,6 +45,7 @@ const initDB = () => {
                     name TEXT NOT NULL,
                     phone TEXT NOT NULL,
                     password TEXT NOT NULL,
+                    profile_image TEXT,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
                 `,
@@ -58,8 +60,8 @@ const initDB = () => {
 
                     db.run(
                         `
-                        INSERT INTO users_new (id, name, phone, password, created_at)
-                        SELECT id, name, phone, password, created_at FROM users
+                        INSERT INTO users_new (id, name, phone, password, profile_image, created_at)
+                        SELECT id, name, phone, password, NULL as profile_image, created_at FROM users
                         `,
                         [],
                         (copyErr) => {
@@ -98,6 +100,21 @@ const initDB = () => {
         });
     });
 
+    // Lightweight migration: add profile_image to users if missing
+    db.serialize(() => {
+        db.all(`PRAGMA table_info(users)`, [], (err, columns) => {
+            if (err || !Array.isArray(columns)) return;
+            const hasProfileImage = columns.some((c) => c && c.name === 'profile_image');
+            if (hasProfileImage) return;
+
+            db.run(`ALTER TABLE users ADD COLUMN profile_image TEXT`, (alterErr) => {
+                if (alterErr) {
+                    console.warn('Could not add profile_image to users:', alterErr.message);
+                }
+            });
+        });
+    });
+
     // Ensure phone is unique (needed for finding users by phone)
     db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_phone ON users(phone)`, (err) => {
         if (err) {
@@ -133,6 +150,9 @@ const initDB = () => {
             chat_id INTEGER,
             user_id INTEGER,
             joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            hidden_at DATETIME,
+            last_read_message_id INTEGER DEFAULT 0,
+            last_read_at DATETIME,
             FOREIGN KEY (chat_id) REFERENCES chats (id),
             FOREIGN KEY (user_id) REFERENCES users (id)
         )
@@ -150,6 +170,35 @@ const initDB = () => {
                     console.warn('Could not add hidden_at to chat_participants:', alterErr.message);
                 }
             });
+        });
+    });
+
+    // Lightweight migration: add last_read_message_id + last_read_at to chat_participants (read receipts)
+    db.serialize(() => {
+        db.all(`PRAGMA table_info(chat_participants)`, [], (err, columns) => {
+            if (err || !Array.isArray(columns)) return;
+
+            const hasLastReadMessageId = columns.some((c) => c && c.name === 'last_read_message_id');
+            const hasLastReadAt = columns.some((c) => c && c.name === 'last_read_at');
+
+            if (!hasLastReadMessageId) {
+                db.run(
+                    `ALTER TABLE chat_participants ADD COLUMN last_read_message_id INTEGER DEFAULT 0`,
+                    (alterErr) => {
+                        if (alterErr) {
+                            console.warn('Could not add last_read_message_id to chat_participants:', alterErr.message);
+                        }
+                    }
+                );
+            }
+
+            if (!hasLastReadAt) {
+                db.run(`ALTER TABLE chat_participants ADD COLUMN last_read_at DATETIME`, (alterErr) => {
+                    if (alterErr) {
+                        console.warn('Could not add last_read_at to chat_participants:', alterErr.message);
+                    }
+                });
+            }
         });
     });
 

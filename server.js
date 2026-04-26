@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const path = require('path');
 require('dotenv').config()
 // Import Swagger
 const { swaggerUi, specs } = require('./config/swagger');
@@ -24,13 +25,18 @@ const io = socketIo(server, {
         methods: ["GET", "POST"]
     }
 });
+// Allow controllers to emit socket events (e.g., read receipts)
+app.set('io', io);
 
 const PORT = process.env.PORT || 4444;
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+
+// Static uploads (profile images, etc.)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
@@ -383,6 +389,55 @@ io.on('connection', (socket) => {
             phone: socket.user.phone,
             isTyping
         });
+    });
+
+    // Mark chat as read (read receipts)
+    socket.on('mark_read', async (data) => {
+        try {
+            const { chatId, messageId } = data || {};
+
+            if (!chatId) {
+                socket.emit('error', { success: false, message: 'Chat ID kerak' });
+                return;
+            }
+
+            const isParticipant = await Chat.isParticipant(chatId, socket.userId);
+            if (!isParticipant) {
+                socket.emit('error', { success: false, message: 'Bu chatga kirish huquqingiz yo\'q' });
+                return;
+            }
+
+            let targetMessageId = messageId ? parseInt(messageId) : null;
+            if (!targetMessageId || Number.isNaN(targetMessageId)) {
+                targetMessageId = await Chat.getLatestMessageId(parseInt(chatId));
+            }
+
+            if (!targetMessageId) {
+                socket.emit('marked_read', {
+                    success: true,
+                    data: { chatId: parseInt(chatId), marked: false }
+                });
+                return;
+            }
+
+            await Chat.markRead(parseInt(chatId), socket.userId, targetMessageId);
+
+            const payload = {
+                success: true,
+                data: {
+                    chatId: parseInt(chatId),
+                    userId: socket.userId,
+                    messageId: targetMessageId,
+                    readAt: new Date().toISOString()
+                }
+            };
+
+            socket.emit('marked_read', payload);
+            socket.to(`chat_${chatId}`).emit('chat_read', payload);
+        } catch (error) {
+            console.error('Mark read error:', error);
+            socket.emit('error', { success: false, message: 'O\'qilganini belgilashda xatolik' });
+        }
     });
 
     // Handle disconnect

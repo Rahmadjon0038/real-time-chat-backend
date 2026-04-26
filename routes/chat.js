@@ -251,6 +251,44 @@ router.get('/:chatId/messages', chatController.getChatMessages);
 
 /**
  * @swagger
+ * /api/chats/{chatId}/read:
+ *   post:
+ *     summary: Chatdagi xabarlarni o'qildi deb belgilash
+ *     description: `messageId` berilsa shu xabargacha (inclusive) o'qildi deb belgilanadi, berilmasa chatdagi oxirgi xabargacha belgilanadi.
+ *     tags: [Chat]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: chatId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Chat ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               messageId:
+ *                 type: integer
+ *                 description: O'qildi deb belgilash uchun message ID
+ *     responses:
+ *       200:
+ *         description: O'qildi deb belgilandi
+ *       401:
+ *         description: Token noto'g'ri yoki yo'q
+ *       403:
+ *         description: Bu chatga kirish huquqingiz yo'q
+ *       500:
+ *         description: Server xatosi
+ */
+router.post('/:chatId/read', chatController.markChatRead);
+
+/**
+ * @swagger
  * /api/chats/{chatId}/messages:
  *   post:
  *     summary: Chat'ga xabar yuborish

@@ -38,7 +38,8 @@ class Message {
                 SELECT 
                     m.*,
                     u.name as sender_name,
-                    u.phone as sender_phone
+                    u.phone as sender_phone,
+                    u.profile_image as sender_profile_image
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
                 WHERE m.id = ?
@@ -61,7 +62,8 @@ class Message {
                 SELECT 
                     m.*,
                     u.name as sender_name,
-                    u.phone as sender_phone
+                    u.phone as sender_phone,
+                    u.profile_image as sender_profile_image
                 FROM messages m
                 JOIN users u ON m.sender_id = u.id
                 WHERE m.chat_id = ?

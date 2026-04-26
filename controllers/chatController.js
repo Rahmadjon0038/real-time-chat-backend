@@ -120,17 +120,85 @@ const getChatMessages = async (req, res) => {
         }
 
         const messages = await Message.getChatMessages(chatId, parseInt(limit), parseInt(offset));
+        const readState = await Chat.getReadState(chatId);
+        const myRead = (readState || []).find((r) => parseInt(r.user_id) === parseInt(req.userId));
 
         res.json({
             success: true,
             data: {
-                messages
+                messages,
+                readState,
+                myLastReadMessageId: myRead ? myRead.last_read_message_id : 0,
+                myLastReadAt: myRead ? myRead.last_read_at : null
             }
         });
 
     } catch (error) {
         console.error('Get chat messages error:', error);
         res.status(500).json({
+            success: false,
+            message: 'Server xatosi'
+        });
+    }
+};
+
+// Mark chat as read up to messageId (or latest if not provided)
+const markChatRead = async (req, res) => {
+    try {
+        const { chatId } = req.params;
+        const { messageId } = req.body || {};
+
+        const isParticipant = await Chat.isParticipant(chatId, req.userId);
+        if (!isParticipant) {
+            return res.status(403).json({
+                success: false,
+                message: 'Bu chatga kirish huquqingiz yo\'q'
+            });
+        }
+
+        let targetMessageId = messageId ? parseInt(messageId) : null;
+        if (!targetMessageId || Number.isNaN(targetMessageId)) {
+            targetMessageId = await Chat.getLatestMessageId(parseInt(chatId));
+        }
+
+        if (!targetMessageId) {
+            return res.json({
+                success: true,
+                message: 'Chatda xabar yo\'q',
+                data: {
+                    chatId: parseInt(chatId),
+                    marked: false
+                }
+            });
+        }
+
+        await Chat.markRead(parseInt(chatId), req.userId, targetMessageId);
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`chat_${chatId}`).emit('chat_read', {
+                success: true,
+                data: {
+                    chatId: parseInt(chatId),
+                    userId: req.userId,
+                    messageId: targetMessageId,
+                    readAt: new Date().toISOString()
+                }
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'O\'qildi deb belgilandi',
+            data: {
+                chatId: parseInt(chatId),
+                messageId: targetMessageId,
+                marked: true
+            }
+        });
+    } catch (error) {
+        console.error('Mark chat read error:', error);
+        return res.status(500).json({
             success: false,
             message: 'Server xatosi'
         });
@@ -298,6 +366,7 @@ module.exports = {
     getUserChats,
     createOrGetChat,
     getChatMessages,
+    markChatRead,
     sendMessage,
     getChatDetails,
     hideChat,

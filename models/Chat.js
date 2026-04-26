@@ -61,8 +61,18 @@ class Chat {
                     c.*,
                     GROUP_CONCAT(u.phone) as participant_phones,
                     GROUP_CONCAT(u.name) as participant_names,
+                    GROUP_CONCAT(u.profile_image) as participant_profile_images,
                     (SELECT content FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message,
-                    (SELECT sent_at FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message_time
+                    (SELECT sent_at FROM messages WHERE chat_id = c.id ORDER BY sent_at DESC LIMIT 1) as last_message_time,
+                    (
+                        SELECT COUNT(*)
+                        FROM messages m
+                        WHERE m.chat_id = c.id
+                          AND m.sender_id != ?
+                          AND m.id > COALESCE(cp.last_read_message_id, 0)
+                    ) as unread_count,
+                    COALESCE(cp.last_read_message_id, 0) as my_last_read_message_id,
+                    cp.last_read_at as my_last_read_at
                 FROM chats c
                 JOIN chat_participants cp ON c.id = cp.chat_id
                 LEFT JOIN chat_participants cp2 ON c.id = cp2.chat_id
@@ -72,7 +82,7 @@ class Chat {
                 ORDER BY last_message_time DESC
             `;
 
-            db.all(sql, [userId], (err, rows) => {
+            db.all(sql, [userId, userId], (err, rows) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -126,7 +136,8 @@ class Chat {
                     c.*,
                     GROUP_CONCAT(u.id) as participant_ids,
                     GROUP_CONCAT(u.phone) as participant_phones,
-                    GROUP_CONCAT(u.name) as participant_names
+                    GROUP_CONCAT(u.name) as participant_names,
+                    GROUP_CONCAT(u.profile_image) as participant_profile_images
                 FROM chats c
                 JOIN chat_participants cp ON c.id = cp.chat_id
                 JOIN users u ON cp.user_id = u.id
@@ -139,6 +150,64 @@ class Chat {
                     reject(err);
                 } else {
                     resolve(decorateUzTime(row, ['created_at']));
+                }
+            });
+        });
+    }
+
+    // Get read state for a chat (per participant)
+    static async getReadState(chatId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                SELECT
+                    cp.user_id,
+                    u.name as user_name,
+                    u.phone as user_phone,
+                    u.profile_image as user_profile_image,
+                    COALESCE(cp.last_read_message_id, 0) as last_read_message_id,
+                    cp.last_read_at
+                FROM chat_participants cp
+                JOIN users u ON cp.user_id = u.id
+                WHERE cp.chat_id = ?
+                ORDER BY cp.user_id ASC
+            `;
+
+            db.all(sql, [chatId], (err, rows) => {
+                if (err) reject(err);
+                else resolve(rows || []);
+            });
+        });
+    }
+
+    static async getLatestMessageId(chatId) {
+        return new Promise((resolve, reject) => {
+            const sql = `SELECT id FROM messages WHERE chat_id = ? ORDER BY id DESC LIMIT 1`;
+            db.get(sql, [chatId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row ? row.id : null);
+            });
+        });
+    }
+
+    // Mark chat read up to a messageId for a user
+    static async markRead(chatId, userId, messageId) {
+        return new Promise((resolve, reject) => {
+            const sql = `
+                UPDATE chat_participants
+                SET
+                    last_read_message_id = CASE
+                        WHEN last_read_message_id IS NULL OR last_read_message_id < ? THEN ?
+                        ELSE last_read_message_id
+                    END,
+                    last_read_at = CURRENT_TIMESTAMP
+                WHERE chat_id = ? AND user_id = ?
+            `;
+
+            db.run(sql, [messageId, messageId, chatId, userId], function(err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve({ updated: this.changes > 0 });
                 }
             });
         });

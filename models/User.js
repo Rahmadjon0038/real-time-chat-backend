@@ -21,7 +21,8 @@ class User {
                     resolve({
                         id: this.lastID,
                         name,
-                        phone: normalizedPhone || phone
+                        phone: normalizedPhone || phone,
+                        profile_image: null
                     });
                 }
             });
@@ -55,7 +56,7 @@ class User {
     // Find user by ID
     static async findById(id) {
         return new Promise((resolve, reject) => {
-            const sql = `SELECT id, name, phone, created_at FROM users WHERE id = ?`;
+            const sql = `SELECT id, name, phone, profile_image, created_at FROM users WHERE id = ?`;
             
             db.get(sql, [id], (err, row) => {
                 if (err) {
@@ -75,7 +76,7 @@ class User {
     // Get all users (for finding users to chat with)
     static async getAll() {
         return new Promise((resolve, reject) => {
-            const sql = `SELECT id, name, phone FROM users ORDER BY name`;
+            const sql = `SELECT id, name, phone, profile_image FROM users ORDER BY name`;
             
             db.all(sql, [], (err, rows) => {
                 if (err) {
@@ -83,6 +84,35 @@ class User {
                 } else {
                     resolve(rows);
                 }
+            });
+        });
+    }
+
+    static async updateProfile(userId, updates) {
+        const { name, profile_image } = updates || {};
+
+        const fields = [];
+        const values = [];
+
+        if (typeof name === 'string') {
+            fields.push('name = ?');
+            values.push(name);
+        }
+
+        if (typeof profile_image === 'string' || profile_image === null) {
+            fields.push('profile_image = ?');
+            values.push(profile_image);
+        }
+
+        if (fields.length === 0) {
+            return { updated: false };
+        }
+
+        return new Promise((resolve, reject) => {
+            const sql = `UPDATE users SET ${fields.join(', ')} WHERE id = ?`;
+            db.run(sql, [...values, userId], function(err) {
+                if (err) reject(err);
+                else resolve({ updated: this.changes > 0 });
             });
         });
     }

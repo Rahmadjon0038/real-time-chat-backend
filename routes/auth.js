@@ -148,6 +148,44 @@ router.get('/profile', authMiddleware, authController.getProfile);
 
 /**
  * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Profil ma'lumotlarini tahrirlash (ism + profil rasm)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Yangi ism
+ *               profile_image_base64:
+ *                 type: string
+ *                 description: Data URL ko'rinishida rasm (png/jpeg/webp). Masalan: data:image/png;base64,....
+ *               profile_image_remove:
+ *                 type: boolean
+ *                 description: true bo'lsa profil rasmini o'chiradi
+ *     responses:
+ *       200:
+ *         description: Profil yangilandi
+ *       400:
+ *         description: Noto'g'ri ma'lumotlar
+ *       401:
+ *         description: Token noto'g'ri yoki yo'q
+ *       404:
+ *         description: Foydalanuvchi topilmadi
+ *       500:
+ *         description: Server xatosi
+ */
+router.put('/profile', authMiddleware, authController.updateProfile);
+
+/**
+ * @swagger
  * /api/auth/users:
  *   get:
  *     summary: Barcha foydalanuvchilar ro'yxati
